@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('name'); // Kita simpan username di sini (contoh: "budi")
             $table->string('email')->unique(); // Simpan lengkap "budi@menfess.com"
             $table->string('password');
+            $table->boolean('is_admin')->default(false);
             $table->rememberToken();
             $table->timestamps();
         });

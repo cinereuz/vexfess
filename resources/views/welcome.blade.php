@@ -4,21 +4,29 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Menfess Angkatan</title>
-    @vite('resources/css/app.css') {{-- Load Tailwind --}}
+    @vite('resources/css/app.css')
 </head>
 <body class="bg-slate-100 text-slate-800 font-sans">
 
-    {{-- Container Utama (Max lebar setara HP) --}}
     <div class="max-w-md mx-auto min-h-screen bg-white shadow-2xl relative">
         
-        {{-- Header --}}
-        <div class="bg-indigo-600 p-5 text-white text-center rounded-b-3xl shadow-lg">
-            <h1 class="text-2xl font-bold tracking-tight">📢 VEXFESS</h1>
-            <p class="text-indigo-200 text-sm mt-1 mb-3">test.</p>
+        {{-- Header Baru dengan Info User & Tombol Logout --}}
+        <div class="bg-indigo-600 p-5 text-white rounded-b-3xl shadow-lg relative z-10 flex justify-between items-start">
+            <div>
+                <h1 class="text-2xl font-bold tracking-tight">📢 VEXFESS</h1>
+                {{-- Menampilkan Nama User dari Auth --}}
+                <p class="text-indigo-200 text-xs mt-1 mb-3 ">Halo, {{ Auth::user()->name }} 👋</p>
+            </div>
+            <form action="{{ route('logout') }}" method="POST">
+                @csrf
+                <button class="bg-indigo-700 hover:bg-indigo-800 text-[10px] px-3 py-1.5 rounded-full transition font-semibold border border-indigo-500">
+                    Logout ↪
+                </button>
+            </form>
         </div>
 
         {{-- Form Input --}}
-        <div class="px-5 -mt-6">
+        <div class="px-5 -mt-6 relative z-20">
             <div class="bg-white p-4 rounded-xl shadow-md border border-slate-100">
                 <form action="{{ route('menfess.store') }}" method="POST">
                     @csrf
@@ -45,28 +53,25 @@
                 </form>
             </div>
             
-            {{-- Flash Message --}}
             @if(session('success'))
                 <div class="mt-4 bg-green-100 text-green-700 p-3 rounded-lg text-xs font-bold text-center border border-green-200">
                     {{ session('success') }}
                 </div>
             @endif
         </div>
+
         {{-- Search Bar --}}
-        <div class="px-5 mt-2 mb-2">
+        <div class="px-5 mt-4 mb-2">
             <form action="{{ route('home') }}" method="GET">
                 <div class="relative">
                     <input type="text" name="search" value="{{ request('search') }}" 
-                        placeholder="Cari namamu atau isi pesan..." 
-                        class="w-full bg-white border border-gray-200 text-sm rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm">
-                    <button type="submit" class="absolute right-3 top-2.5 text-gray-400 hover:text-blue-600">
-                        🔍
-                    </button>
+                        placeholder="Cari..." 
+                        class="w-full bg-slate-50 border border-slate-200 text-sm rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <button type="submit" class="absolute right-3 top-2.5 text-gray-400 hover:text-indigo-600">🔍</button>
                 </div>
-                {{-- Link Reset Filter --}}
                 @if(request('search') || request('tag'))
                     <div class="text-center mt-2">
-                        <a href="{{ route('home') }}" class="text-xs text-red-500 underline">Reset Pencarian</a>
+                        <a href="{{ route('home') }}" class="text-xs text-red-500 underline">Reset Filter</a>
                     </div>
                 @endif
             </form>
@@ -78,18 +83,44 @@
             
             @foreach($menfesses as $item)
             <div class="border p-4 rounded-xl shadow-sm hover:shadow-md transition bg-white relative">
-                <div class="flex justify-between items-start mb-2">
-                    <span class="bg-indigo-50 text-indigo-600 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wide">{{ $item->tag }}</span>
-                    <span class="text-[10px] text-slate-400">{{ $item->created_at->diffForHumans() }}</span>
+                
+                {{-- Header Card: Avatar + Info --}}
+                <div class="flex items-start gap-3 mb-3">
+                    {{-- Avatar berdasarkan USERNAME pengirim --}}
+                    <img src="https://api.dicebear.com/9.x/notionists/svg?seed={{ $item->user->name }}" 
+                         alt="avatar" 
+                         class="w-10 h-10 rounded-full bg-indigo-50 border border-indigo-100 p-0.5">
+                    
+                    <div class="flex-1">
+                        <div class="flex justify-between items-start">
+                            {{-- Nama Pengirim (USERNAME) --}}
+                            <span class="text-sm font-bold text-gray-800">{{ $item->user->name }}</span>
+                            <span class="text-[10px] text-slate-400">{{ $item->created_at->diffForHumans() }}</span>
+                        </div>
+                        <p class="text-xs font-bold text-slate-500 mt-0.5">To: {{ $item->recipient }}</p>
+                    </div>
                 </div>
-                <p class="text-xs font-bold text-gray-500">To: {{ $item->recipient }}</p>
-                <p class="text-sm mt-1 mb-3">{{ $item->message }}</p>
+
+                {{-- Isi Pesan --}}
+                <p class="text-sm text-slate-800 leading-relaxed mb-3 pl-[3.25rem]">
+                    {{ $item->message }}
+                </p>
+
+                {{-- Footer: Tombol Like --}}
                 <div class="flex justify-end items-center border-t pt-2 mt-2 border-dashed border-gray-100">
                     <form action="{{ route('menfess.like', $item->id) }}" method="POST">
                         @csrf
-                        <button type="submit" class="flex items-center text-xs text-gray-400 hover:text-red-500 transition group">
-                            <span class="group-hover:scale-125 transition transform duration-200">❤️</span>
-                            <span class="ml-1 font-bold">{{ $item->likes }}</span>
+                        
+                        {{-- Logika Warna Tombol Like (Merah jika sudah dilike user login) --}}
+                        @php
+                            $isLiked = in_array($item->id, $likedMenfessIds ?? []);
+                        @endphp
+
+                        <button type="submit" class="flex items-center text-xs transition group {{ $isLiked ? 'text-red-500' : 'text-gray-400 hover:text-red-400' }}">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="{{ $isLiked ? 'currentColor' : 'none' }}" stroke="currentColor" stroke-width="2" class="w-5 h-5 group-hover:scale-110 transition transform duration-200">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+                            </svg>
+                            <span class="ml-1.5 font-bold">{{ $item->likes }}</span>
                         </button>
                     </form>
                 </div>

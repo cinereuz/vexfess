@@ -8,21 +8,17 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('menfesses', function (Blueprint $table) {
+        Schema::create('menfess_likes', function (Blueprint $table) {
             $table->id();
-            // Menambahkan foreign key ke user
+            // Mencatat siapa yang like postingan mana
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->string('recipient')->nullable();
-            $table->text('message');
-            $table->string('tag');
-            $table->enum('status', ['pending', 'approved'])->default('pending');
-            $table->integer('likes')->default(0);
+            $table->foreignId('menfess_id')->constrained()->onDelete('cascade');
             $table->timestamps();
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('menfesses');
+        Schema::dropIfExists('menfess_likes');
     }
 };
