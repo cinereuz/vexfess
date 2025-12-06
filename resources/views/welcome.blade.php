@@ -10,19 +10,35 @@
 
     <div class="max-w-md mx-auto min-h-screen bg-white shadow-2xl relative">
         
-        {{-- Header Baru dengan Info User & Tombol Logout --}}
+        {{-- Header Baru dengan Info User & Tombol Navigasi --}}
         <div class="bg-indigo-600 p-5 text-white rounded-b-3xl shadow-lg relative z-10 flex justify-between items-start">
             <div>
-                <h1 class="text-2xl font-bold tracking-tight">📢 VEXFESS</h1>
+                <h1 class="text-2xl font-bold tracking-tight">💬 VEXFESS</h1>
                 {{-- Menampilkan Nama User dari Auth --}}
                 <p class="text-indigo-200 text-xs mt-1 mb-3 ">Halo, {{ Auth::user()->name }} 👋</p>
             </div>
-            <form action="{{ route('logout') }}" method="POST">
-                @csrf
-                <button class="bg-indigo-700 hover:bg-indigo-800 text-[10px] px-3 py-1.5 rounded-full transition font-semibold border border-indigo-500">
-                    Logout ↪
-                </button>
-            </form>
+
+            {{-- Container Tombol Kanan --}}
+            <div class="flex gap-2">
+                {{-- Tombol Edit Profile (BARU) --}}
+                <a href="{{ route('profile.edit') }}" class="bg-indigo-500 hover:bg-indigo-400 text-white text-[10px] px-3 py-1.5 rounded-full transition font-semibold border border-indigo-400 flex items-center">
+                    👤 Profil
+                </a>
+                {{-- Cek apakah user adalah Admin? --}}
+                @if(Auth::user()->is_admin)
+                    <a href="{{ route('admin.index') }}" class="bg-yellow-400 hover:bg-yellow-500 text-yellow-900 text-[10px] px-3 py-1.5 rounded-full transition font-bold shadow-sm flex items-center">
+                        👑 Admin Panel
+                    </a>
+                @endif
+
+                {{-- Tombol Logout --}}
+                <form action="{{ route('logout') }}" method="POST">
+                    @csrf
+                    <button class="bg-indigo-700 hover:bg-indigo-800 text-[10px] px-3 py-1.5 rounded-full transition font-semibold border border-indigo-500">
+                        Logout 🚪
+                    </button>
+                </form>
+            </div>
         </div>
 
         {{-- Form Input --}}
@@ -86,10 +102,10 @@
                 
                 {{-- Header Card: Avatar + Info --}}
                 <div class="flex items-start gap-3 mb-3">
-                    {{-- Avatar berdasarkan USERNAME pengirim --}}
-                    <img src="https://api.dicebear.com/9.x/notionists/svg?seed={{ $item->user->name }}" 
+                    {{-- Avatar berdasarkan nama pengirim (User Name) --}}
+                    <img src="https://api.dicebear.com/9.x/notionists/svg?seed={{ $item->user->avatar ?? $item->user->name }}" 
                          alt="avatar" 
-                         class="w-10 h-10 rounded-full bg-indigo-50 border border-indigo-100 p-0.5">
+                         class="w-10 h-10 rounded-full bg-indigo-50 border border-indigo-100 p-0.5 object-cover">
                     
                     <div class="flex-1">
                         <div class="flex justify-between items-start">
@@ -111,7 +127,7 @@
                     <form action="{{ route('menfess.like', $item->id) }}" method="POST">
                         @csrf
                         
-                        {{-- Logika Warna Tombol Like (Merah jika sudah dilike user login) --}}
+                        {{-- Logika Warna Tombol Like --}}
                         @php
                             $isLiked = in_array($item->id, $likedMenfessIds ?? []);
                         @endphp

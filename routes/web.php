@@ -3,8 +3,9 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\MenfessController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\ProfileController; // 👈 TAMBAHKAN INI
 
-// --- GROUP TAMU (Belum Login) ---
+// --- GUEST ROUTES (Belum Login) ---
 Route::middleware('guest')->group(function() {
     Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
@@ -12,25 +13,29 @@ Route::middleware('guest')->group(function() {
     Route::post('/register', [AuthController::class, 'register']);
 });
 
-// Logout butuh login dulu
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout')->middleware('auth');
 
-// --- GROUP USER (Sudah Login) ---
+// --- AUTH ROUTES (Sudah Login) ---
 Route::middleware('auth')->group(function() {
     // Halaman Utama Menfess
     Route::get('/', [MenfessController::class, 'index'])->name('home');
     
-    // Kirim Menfess
+    // Aksi Menfess
     Route::post('/send', [MenfessController::class, 'store'])
         ->middleware('throttle:5,1') 
         ->name('menfess.store');
-    
-    // Like Menfess
+        
     Route::post('/menfess/{id}/like', [MenfessController::class, 'like'])->name('menfess.like');
+
+    // 👇 Profile Routes (Sekarang lebih bersih)
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
 });
 
-// --- ADMIN ---
-Route::middleware(['auth.basic'])->prefix('admin')->group(function() {
+
+
+// --- ADMIN ROUTES ---
+Route::middleware(['auth', 'admin'])->prefix('admin')->group(function() {
     Route::get('/', [MenfessController::class, 'admin'])->name('admin.index');
     Route::patch('/approve/{id}', [MenfessController::class, 'approve'])->name('admin.approve');
     Route::delete('/reject/{id}', [MenfessController::class, 'reject'])->name('admin.reject');

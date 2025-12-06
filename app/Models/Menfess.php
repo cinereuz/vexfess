@@ -9,7 +9,6 @@ class Menfess extends Model
 {
     use HasFactory;
 
-    // Pastikan user_id masuk sini
     protected $fillable = ['user_id', 'recipient', 'message', 'tag', 'status', 'likes'];
 
     public function user()
