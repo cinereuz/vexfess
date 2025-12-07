@@ -26,7 +26,23 @@ class MenfessController extends Controller
             $query->where('tag', $request->tag);
         }
 
-        $menfesses = $query->latest()->paginate(10);
+        // Fitur Sorting
+        $sort = $request->get('sort', 'latest'); // Default 'latest'
+        
+        switch ($sort) {
+            case 'oldest':
+                $query->oldest(); // Urutkan terlama (ASC)
+                break;
+            case 'popular':
+                $query->orderByDesc('likes'); // Urutkan like terbanyak
+                break;
+            case 'latest':
+            default:
+                $query->latest(); // Urutkan terbaru (DESC)
+                break;
+        }
+
+        $menfesses = $query->paginate(10);
 
         // Ambil daftar ID pesan yang sudah di-like user login
         $likedMenfessIds = [];

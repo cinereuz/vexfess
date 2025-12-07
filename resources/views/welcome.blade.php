@@ -10,32 +10,29 @@
 
     <div class="max-w-md mx-auto min-h-screen bg-white shadow-2xl relative">
         
-        {{-- Header Baru dengan Info User & Tombol Navigasi --}}
+        {{-- Header Baru --}}
         <div class="bg-indigo-600 p-5 text-white rounded-b-3xl shadow-lg relative z-10 flex justify-between items-start">
             <div>
                 <h1 class="text-2xl font-bold tracking-tight">💬 VEXFESS</h1>
-                {{-- Menampilkan Nama User dari Auth --}}
                 <p class="text-indigo-200 text-xs mt-1 mb-3 ">Halo, {{ Auth::user()->name }} 👋</p>
             </div>
 
-            {{-- Container Tombol Kanan --}}
-            <div class="flex gap-2">
-                {{-- Tombol Edit Profile (BARU) --}}
-                <a href="{{ route('profile.edit') }}" class="bg-indigo-500 hover:bg-indigo-400 text-white text-[10px] px-3 py-1.5 rounded-full transition font-semibold border border-indigo-400 flex items-center">
+            <div class="flex gap-2 items-center">
+                {{-- Tombol Edit Profile --}}
+                <a href="{{ route('profile.edit') }}" class="bg-indigo-500 hover:bg-indigo-400 text-white text-[10px] px-3 py-1.5 rounded-full transition font-semibold border border-indigo-400 flex items-center shadow-sm">
                     👤 Profil
                 </a>
-                {{-- Cek apakah user adalah Admin? --}}
+
                 @if(Auth::user()->is_admin)
                     <a href="{{ route('admin.index') }}" class="bg-yellow-400 hover:bg-yellow-500 text-yellow-900 text-[10px] px-3 py-1.5 rounded-full transition font-bold shadow-sm flex items-center">
-                        👑 Admin Panel
+                        👑 Admin
                     </a>
                 @endif
 
-                {{-- Tombol Logout --}}
                 <form action="{{ route('logout') }}" method="POST">
                     @csrf
-                    <button class="bg-indigo-700 hover:bg-indigo-800 text-[10px] px-3 py-1.5 rounded-full transition font-semibold border border-indigo-500">
-                        Logout 🚪
+                    <button class="bg-indigo-700 hover:bg-red-800 text-[10px] px-3 py-1.5 rounded-full transition font-semibold border border-indigo-500 shadow-sm">
+                        Logout
                     </button>
                 </form>
             </div>
@@ -76,18 +73,51 @@
             @endif
         </div>
 
-        {{-- Search Bar --}}
+        {{-- Search & Sort Bar --}}
         <div class="px-5 mt-4 mb-2">
-            <form action="{{ route('home') }}" method="GET">
+            <form action="{{ route('home') }}" method="GET" class="flex flex-col gap-3">
+                
+                {{-- Search Input --}}
                 <div class="relative">
                     <input type="text" name="search" value="{{ request('search') }}" 
                         placeholder="Cari..." 
                         class="w-full bg-slate-50 border border-slate-200 text-sm rounded-full px-4 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
                     <button type="submit" class="absolute right-3 top-2.5 text-gray-400 hover:text-indigo-600">🔍</button>
                 </div>
-                @if(request('search') || request('tag'))
-                    <div class="text-center mt-2">
-                        <a href="{{ route('home') }}" class="text-xs text-red-500 underline">Reset Filter</a>
+
+                {{-- Filter & Sort Options --}}
+                <div class="flex justify-between items-center text-xs">
+                    {{-- Tombol Sort --}}
+                    <div class="flex bg-slate-100 p-1 rounded-lg">
+                        <button type="submit" name="sort" value="latest" 
+                            class="px-3 py-1 rounded-md transition {{ request('sort', 'latest') == 'latest' ? 'bg-white text-indigo-600 shadow-sm font-bold' : 'text-slate-500 hover:text-slate-700' }}">
+                            Terbaru
+                        </button>
+                        <button type="submit" name="sort" value="oldest" 
+                            class="px-3 py-1 rounded-md transition {{ request('sort') == 'oldest' ? 'bg-white text-indigo-600 shadow-sm font-bold' : 'text-slate-500 hover:text-slate-700' }}">
+                            Terlama
+                        </button>
+                        <button type="submit" name="sort" value="popular" 
+                            class="px-3 py-1 rounded-md transition {{ request('sort') == 'popular' ? 'bg-white text-indigo-600 shadow-sm font-bold' : 'text-slate-500 hover:text-slate-700' }}">
+                            🔥 Populer
+                        </button>
+                    </div>
+
+                    {{-- Pertahankan filter tag saat sorting --}}
+                    @if(request('tag'))
+                        <input type="hidden" name="tag" value="{{ request('tag') }}">
+                        <span class="bg-indigo-100 text-indigo-600 px-2 py-1 rounded-md font-bold">
+                            #{{ request('tag') }}
+                            <a href="{{ route('home', ['sort' => request('sort')]) }}" class="ml-1 text-indigo-400 hover:text-indigo-700">✕</a>
+                        </span>
+                    @endif
+                </div>
+
+                @if(request('search'))
+                    <div class="text-center mt-2 flex justify-center">
+                        <a href="{{ route('home') }}" class="inline-flex items-center gap-1 bg-red-100 text-red-600 text-xs px-3 py-1.5 rounded-full font-bold hover:bg-red-200 transition">
+                            <span>✕</span> Reset Pencarian
+                        </a>
                     </div>
                 @endif
             </form>
@@ -95,21 +125,28 @@
 
         {{-- Feed Pesan --}}
         <div class="p-5 pb-20 space-y-4">
-            <h3 class="text-slate-400 text-xs font-bold uppercase tracking-wider">Timeline Terbaru</h3>
+            <h3 class="text-slate-400 text-xs font-bold uppercase tracking-wider">
+                @if(request('sort') == 'popular')
+                    Timeline Terpopuler 🔥
+                @elseif(request('sort') == 'oldest')
+                    Timeline Terlama ⏳
+                @else
+                    Timeline Terbaru 🕒
+                @endif
+            </h3>
             
             @foreach($menfesses as $item)
             <div class="border p-4 rounded-xl shadow-sm hover:shadow-md transition bg-white relative">
                 
                 {{-- Header Card: Avatar + Info --}}
                 <div class="flex items-start gap-3 mb-3">
-                    {{-- Avatar berdasarkan nama pengirim (User Name) --}}
-                    <img src="https://api.dicebear.com/9.x/notionists/svg?seed={{ $item->user->avatar ?? $item->user->name }}" 
+                    {{-- Avatar Logic: Pake avatar database kalau ada, kalau tidak pake nama default --}}
+                    <img src="https://api.dicebear.com/9.x/lorelei-neutral/svg?seed={{ $item->user->avatar ?? $item->user->name }}" 
                          alt="avatar" 
                          class="w-10 h-10 rounded-full bg-indigo-50 border border-indigo-100 p-0.5 object-cover">
                     
                     <div class="flex-1">
                         <div class="flex justify-between items-start">
-                            {{-- Nama Pengirim (USERNAME) --}}
                             <span class="text-sm font-bold text-gray-800">{{ $item->user->name }}</span>
                             <span class="text-[10px] text-slate-400">{{ $item->created_at->diffForHumans() }}</span>
                         </div>
@@ -126,8 +163,6 @@
                 <div class="flex justify-end items-center border-t pt-2 mt-2 border-dashed border-gray-100">
                     <form action="{{ route('menfess.like', $item->id) }}" method="POST">
                         @csrf
-                        
-                        {{-- Logika Warna Tombol Like --}}
                         @php
                             $isLiked = in_array($item->id, $likedMenfessIds ?? []);
                         @endphp
@@ -145,7 +180,8 @@
 
             {{-- Pagination --}}
             <div class="mt-4">
-                {{ $menfesses->links() }}
+                {{-- Gunakan appends agar parameter sort & search tetap ada saat pindah halaman --}}
+                {{ $menfesses->appends(request()->query())->links() }}
             </div>
         </div>
     </div>

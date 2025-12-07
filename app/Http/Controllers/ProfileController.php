@@ -4,13 +4,16 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Pagination\Paginator;
+use Illuminate\Pagination\LengthAwarePaginator;
+use App\Models\User;
 
 class ProfileController extends Controller
 {
-    public function edit()
+    public function edit(Request $request)
     {
-        // Daftar pilihan avatar (Seed Dicebear)
-        $avatars = [
+        // Daftar 36 pilihan avatar standar
+        $allAvatars = [
             'Felix', 'Aneka', 'Zoe', 'Midnight', 
             'Luna', 'Max', 'Oliver', 'Bella',
             'Leo', 'Milo', 'Shadow', 'Jasper',
@@ -21,6 +24,29 @@ class ProfileController extends Controller
             'Kali', 'Rex', 'Bandit', 'Willow',
             'Buster', 'Gizmo', 'Harley', 'Nala'
         ];
+
+        // LOGIKA ADMIN: Tambahkan avatar spesial
+        if (Auth::user()->is_admin) {
+            array_unshift($allAvatars, 'King Admin');
+        }
+
+        // --- LOGIKA PAGINASI ---
+        // KEMBALIKAN KE 10 ITEM PER HALAMAN (Mobile & Desktop Sama)
+        $perPage = 10; 
+        
+        $currentPage = Paginator::resolveCurrentPage('page');
+        $currentItems = array_slice($allAvatars, ($currentPage - 1) * $perPage, $perPage);
+        
+        $avatars = new LengthAwarePaginator(
+            $currentItems, 
+            count($allAvatars), 
+            $perPage, 
+            $currentPage, 
+            [
+                'path' => $request->url(), 
+                'query' => $request->query() 
+            ]
+        );
         
         return view('profile', compact('avatars'));
     }
@@ -31,11 +57,15 @@ class ProfileController extends Controller
             'avatar' => 'required|string',
         ]);
 
-        /** @var \App\Models\User $user */
-        $user = Auth::user(); // Editor sekarang tau ini adalah Model User
+        /** @var User $user */
+        $user = Auth::user(); 
+
+        if (!Auth::user()->is_admin && $request->avatar === 'AdminKing') {
+            return back()->with('error', 'Avatar tersebut khusus untuk Admin!');
+        }
 
         $user->avatar = $request->avatar;
-        $user->save(); // Garis merah harusnya hilang
+        $user->save(); 
 
         return back()->with('success', 'Avatar berhasil diganti!');
     }
