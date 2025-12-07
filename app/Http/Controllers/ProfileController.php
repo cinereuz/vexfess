@@ -27,7 +27,7 @@ class ProfileController extends Controller
 
         // LOGIKA ADMIN: Tambahkan avatar spesial
         if (Auth::user()->is_admin) {
-            array_unshift($allAvatars, 'King Admin');
+            array_unshift($allAvatars, 'King Admin', 'Admin Magang', 'Atmint', 'Rahasia');
         }
 
         // --- LOGIKA PAGINASI ---
