@@ -31,7 +31,7 @@
 
                 <form action="{{ route('logout') }}" method="POST">
                     @csrf
-                    <button class="bg-indigo-700 hover:bg-red-800 text-[10px] px-3 py-1.5 rounded-full transition font-semibold border border-indigo-500 shadow-sm">
+                    <button class="bg-indigo-700 hover:bg-indigo-800 text-[10px] px-3 py-1.5 rounded-full transition font-semibold border border-indigo-500 shadow-sm">
                         Logout
                     </button>
                 </form>
@@ -115,7 +115,7 @@
 
                 @if(request('search'))
                     <div class="text-center mt-2 flex justify-center">
-                        <a href="{{ route('home') }}" class="inline-flex items-center gap-1 bg-red-100 text-red-600 text-xs px-3 py-1.5 rounded-full font-bold hover:bg-red-200 transition">
+                        <a href="{{ route('home') }}" class="inline-flex items-center gap-1 bg-red-100 text-red-600 text-xs px-3 py-1.5 rounded-full font-bold hover:bg-red-200 transition shadow-sm border border-red-200">
                             <span>✕</span> Reset Pencarian
                         </a>
                     </div>
@@ -140,7 +140,7 @@
                 
                 {{-- Header Card: Avatar + Info --}}
                 <div class="flex items-start gap-3 mb-3">
-                    {{-- Avatar Logic: Pake avatar database kalau ada, kalau tidak pake nama default --}}
+                    {{-- Avatar Logic --}}
                     <img src="https://api.dicebear.com/9.x/lorelei-neutral/svg?seed={{ $item->user->avatar ?? $item->user->name }}" 
                          alt="avatar" 
                          class="w-10 h-10 rounded-full bg-indigo-50 border border-indigo-100 p-0.5 object-cover">
@@ -178,10 +178,87 @@
             </div>
             @endforeach
 
-            {{-- Pagination --}}
-            <div class="mt-4">
-                {{-- Gunakan appends agar parameter sort & search tetap ada saat pindah halaman --}}
-                {{ $menfesses->appends(request()->query())->links() }}
+            {{-- Custom Pagination Rapi --}}
+            <div class="mt-6 pt-4 border-t border-slate-100">
+                {{-- Penting: appends() agar filter tidak hilang --}}
+                @php
+                    $menfesses->appends(request()->query());
+                @endphp
+                
+                @if ($menfesses->hasPages())
+                    <nav role="navigation" aria-label="Pagination Navigation" class="flex flex-col items-center">
+                        
+                        {{-- Info Halaman (Showing X to Y of Z) --}}
+                        <div class="mb-3 text-xs text-slate-400 text-center">
+                            Menampilkan <span class="font-bold text-slate-600">{{ $menfesses->firstItem() }}</span> 
+                            sampai <span class="font-bold text-slate-600">{{ $menfesses->lastItem() }}</span> 
+                            dari <span class="font-bold text-slate-600">{{ $menfesses->total() }}</span> pesan
+                        </div>
+
+                        {{-- Controls Container --}}
+                        <div class="flex justify-center items-center gap-1 w-full px-2">
+                            
+                            {{-- Previous Page Link --}}
+                            @if ($menfesses->onFirstPage())
+                                <span class="px-3 py-1.5 text-slate-300 bg-slate-50 border border-slate-200 rounded-md cursor-not-allowed text-xs font-bold text-center">
+                                    ← Prev
+                                </span>
+                            @else
+                                <a href="{{ $menfesses->previousPageUrl() }}" rel="prev" class="px-3 py-1.5 text-indigo-600 bg-white border border-indigo-200 rounded-md hover:bg-indigo-50 hover:border-indigo-300 transition text-xs font-bold shadow-sm text-center">
+                                    ← Prev
+                                </a>
+                            @endif
+
+                            {{-- Pagination Numbers (Logic windowing agar rapi di mobile) --}}
+                            <div class="flex gap-1 px-1">
+                                @php
+                                    $currentPage = $menfesses->currentPage();
+                                    $lastPage = $menfesses->lastPage();
+                                    
+                                    // Logika: Tampilkan 3 halaman di sekitar halaman aktif (biar ga kepanjangan di HP)
+                                    $start = max(1, $currentPage - 1);
+                                    $end = min($lastPage, $currentPage + 1);
+                                    
+                                    // Koreksi jika di ujung agar tetap minimal 3 item (jika ada)
+                                    if ($lastPage >= 3) {
+                                        if ($currentPage == 1) $end = 3;
+                                        if ($currentPage == $lastPage) $start = $lastPage - 2;
+                                    }
+                                @endphp
+
+                                @foreach ($menfesses->getUrlRange(1, $lastPage) as $page => $url)
+                                    @php
+                                        // Hanya tampilkan jika masuk range window
+                                        $isVisible = ($page >= $start && $page <= $end);
+                                    @endphp
+
+                                    <div class="{{ $isVisible ? 'block' : 'hidden' }}">
+                                        @if ($page == $menfesses->currentPage())
+                                            <span class="w-8 h-8 flex items-center justify-center bg-indigo-600 text-white rounded-md text-xs font-bold shadow-md">
+                                                {{ $page }}
+                                            </span>
+                                        @else
+                                            <a href="{{ $url }}" class="w-8 h-8 flex items-center justify-center text-slate-500 bg-white border border-slate-200 rounded-md hover:bg-slate-50 hover:text-indigo-600 hover:border-indigo-200 transition text-xs font-semibold">
+                                                {{ $page }}
+                                            </a>
+                                        @endif
+                                    </div>
+                                @endforeach
+                            </div>
+
+                            {{-- Next Page Link --}}
+                            @if ($menfesses->hasMorePages())
+                                <a href="{{ $menfesses->nextPageUrl() }}" rel="next" class="px-3 py-1.5 text-indigo-600 bg-white border border-indigo-200 rounded-md hover:bg-indigo-50 hover:border-indigo-300 transition text-xs font-bold shadow-sm text-center">
+                                    Next →
+                                </a>
+                            @else
+                                <span class="px-3 py-1.5 text-slate-300 bg-slate-50 border border-slate-200 rounded-md cursor-not-allowed text-xs font-bold text-center">
+                                    Next →
+                                </span>
+                            @endif
+                        </div>
+                    </nav>
+                @endif
             </div>
         </div>
     </div>

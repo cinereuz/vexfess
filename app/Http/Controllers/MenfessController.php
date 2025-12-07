@@ -27,24 +27,24 @@ class MenfessController extends Controller
         }
 
         // Fitur Sorting
-        $sort = $request->get('sort', 'latest'); // Default 'latest'
+        $sort = $request->get('sort', 'latest'); 
         
         switch ($sort) {
             case 'oldest':
-                $query->oldest(); // Urutkan terlama (ASC)
+                $query->oldest();
                 break;
             case 'popular':
-                $query->orderByDesc('likes'); // Urutkan like terbanyak
+                $query->orderByDesc('likes');
                 break;
             case 'latest':
             default:
-                $query->latest(); // Urutkan terbaru (DESC)
+                $query->latest();
                 break;
         }
 
-        $menfesses = $query->paginate(10);
+        // Paginasi 3 item per halaman
+        $menfesses = $query->paginate(3);
 
-        // Ambil daftar ID pesan yang sudah di-like user login
         $likedMenfessIds = [];
         if (Auth::check()) {
             $likedMenfessIds = MenfessLike::where('user_id', Auth::id())
@@ -62,15 +62,26 @@ class MenfessController extends Controller
             'tag' => 'required',
         ]);
 
+        // LOGIKA BARU: Cek apakah pengirim adalah Admin
+        $isAdmin = Auth::user()->is_admin;
+        
+        // Jika Admin -> Langsung 'approved', Jika User Biasa -> 'pending'
+        $status = $isAdmin ? 'approved' : 'pending';
+
         Menfess::create([
-            'user_id' => Auth::id(), // Simpan ID user yang sedang login
+            'user_id' => Auth::id(),
             'recipient' => $request->recipient ?? 'Anonim',
             'message' => $request->message,
             'tag' => $request->tag,
-            'status' => 'pending'
+            'status' => $status
         ]);
 
-        return back()->with('success', 'Pesan terkirim! Menunggu moderasi.');
+        // Pesan notifikasi yang berbeda
+        $notificationMessage = $isAdmin 
+            ? 'Pesan admin berhasil diposting!' 
+            : 'Pesan terkirim! Menunggu moderasi.';
+
+        return back()->with('success', $notificationMessage);
     }
 
     public function like($id)
@@ -78,17 +89,14 @@ class MenfessController extends Controller
         $menfess = Menfess::findOrFail($id);
         $userId = Auth::id();
 
-        // Cek apakah user sudah pernah like pesan ini?
         $existingLike = MenfessLike::where('menfess_id', $id)
                                    ->where('user_id', $userId)
                                    ->first();
 
         if ($existingLike) {
-            // Jika sudah -> UNLIKE (Hapus data like & kurangi counter)
             $existingLike->delete();
             $menfess->decrement('likes');
         } else {
-            // Jika belum -> LIKE (Buat data like & tambah counter)
             MenfessLike::create([
                 'menfess_id' => $id,
                 'user_id' => $userId
